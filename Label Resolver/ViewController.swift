@@ -336,28 +336,6 @@ class ViewController: NSViewController {
 
     
     // MARK: - Show Invisble Charaters
-    private func highlightInvisibleCharacters() {
-        guard let textStorage = labelFileContents.textStorage else { return }
-
-        let fullRange = NSRange(location: 0, length: textStorage.length)
-        
-        // Remove existing highlights to refresh visibility
-        textStorage.removeAttribute(.backgroundColor, range: fullRange)
-
-        // Set a subtle gray color to make invisible characters visible
-        let invisibleCharacterColor = NSColor.gray.withAlphaComponent(0.1)
-
-        // Regex to find spaces, tabs, and newlines
-        let regex = try! NSRegularExpression(pattern: "[ \\t\\n]", options: [])
-
-        regex.enumerateMatches(in: labelFileContents.string, options: [], range: fullRange) { match, _, _ in
-            if let matchRange = match?.range {
-                textStorage.addAttribute(.backgroundColor, value: invisibleCharacterColor, range: matchRange)
-            }
-        }
-    }
-
-    
     private func showInvisibleCharacters(in text: String) {
         guard let textStorage = labelFileContents.textStorage else { return }
 
@@ -429,7 +407,7 @@ class ViewController: NSViewController {
     }
     
 
-    // MARK: - Populate UI Fields
+    // MARK: - Populate UI Fields with resolved label variables
     private func populateFields(with labelInfo: LabelInfo) {
         labelNameTextField.stringValue = labelInfo.name
         labelTypeTextField.stringValue = labelInfo.type
@@ -476,13 +454,7 @@ class ViewController: NSViewController {
     }
 
     
-    // MARK: - Helper Function to Set Text Field Borders
-    private func setTextFieldBorder(_ textField: NSTextField, isValid: Bool, validColor: NSColor, invalidColor: NSColor) {
-        textField.layer?.borderWidth = isValid ? 0 : 2
-        textField.layer?.borderColor = isValid ? validColor.cgColor : invalidColor.cgColor
-    }
-
-    
+    // MARK: - Helper Functions
     // Validate `labelFileContents`
     private func validateLabelFileContents() {
         var issues: [String] = []
@@ -561,32 +533,6 @@ class ViewController: NSViewController {
 
         if blankLineCount > 1 {
             warnings.append("There are \(blankLineCount) extra blank lines at the end of the file.")
-        }
-    }
-
-    private func checkFinalLines(_ issues: inout [String]) {
-        let lines = originalLabelFileText.components(separatedBy: .newlines)
-        
-        // Ensure at least 3 meaningful lines (allows trailing blank lines)
-        let nonEmptyLines = lines.filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
-        
-        if nonEmptyLines.count < 3 {
-            issues.append("File is too short; missing required `;;` structure.")
-            return
-        }
-
-        // Identify last two meaningful lines
-        let lastMeaningfulLine = nonEmptyLines.last ?? ""
-        let secondToLastMeaningfulLine = nonEmptyLines.dropLast().last ?? ""
-
-        // Ensure last line is completely empty
-        if !lastMeaningfulLine.isEmpty {
-            issues.append("Last line should be empty, but found: '\(lastMeaningfulLine)'")
-        }
-
-        // Ensure second-to-last line is exactly "    ;;"
-        if secondToLastMeaningfulLine != "    ;;" {
-            issues.append("Second-to-last line must be exactly '    ;;' (4 spaces + ;;), but found: '\(secondToLastMeaningfulLine)'")
         }
     }
 
@@ -772,97 +718,7 @@ class ViewController: NSViewController {
             scrollView.wantsLayer = true  // Ensure the layer is active
         }
     }
-
     
-    private func validateTrailingBlankLines() {
-        guard let textStorage = labelFileContents.textStorage else { return }
-
-        let fullText = originalLabelFileText // Use original text for validation
-        let lines = fullText.components(separatedBy: .newlines)
-
-        // Count blank lines at the end
-        var blankLineCount = 0
-        for line in lines.reversed() {
-            if line.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                blankLineCount += 1
-            } else {
-                break // Stop counting once we hit a non-blank line
-            }
-        }
-
-        if blankLineCount > 1 {
-            print("Warning: More than one blank line at the end!")
-            highlightExcessBlankLines(blankLineCount)
-        }
-    }
-
-    
-    private func highlightExcessBlankLines(_ count: Int) {
-        guard let textStorage = labelFileContents.textStorage else { return }
-
-        let fullText = labelFileContents.string
-        let lines = fullText.components(separatedBy: .newlines)
-
-        var blankLineStartIndex: Int?
-        var blankLineCount = 0
-
-        for (index, line) in lines.reversed().enumerated() {
-            if line.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                blankLineCount += 1
-                if blankLineCount > 1 {
-                    blankLineStartIndex = lines.count - index - 1
-                }
-            } else {
-                break
-            }
-        }
-
-        guard let startIndex = blankLineStartIndex else { return } // No extra blank lines found
-
-        // Calculate range for highlighting extra blank lines
-        let extraBlankLines = lines[startIndex..<lines.count]
-        let rangeStart = fullText.count - extraBlankLines.joined(separator: "\n").count
-        let rangeLength = extraBlankLines.joined(separator: "\n").count
-        let range = NSRange(location: rangeStart, length: rangeLength)
-
-        print("Highlighting excess blank lines in range: \(range)")
-
-        // Highlight in yellow
-        textStorage.addAttribute(.backgroundColor, value: NSColor.yellow.withAlphaComponent(0.5), range: range)
-    }
-
-
-    
-    // MARK: - Helper Function to Highlight a Line in NSTextView
-    private func highlightLine(_ originalText: String, line: String, color: NSColor) {
-        guard let textStorage = labelFileContents.textStorage else { return }
-
-        let fullDisplayedText = labelFileContents.string // The modified text in NSTextView
-        let modifiedLine = applyInvisibleCharacterReplacements(to: line) // Convert to displayed format
-
-        if modifiedLine.isEmpty {
-            print("Warning: Attempted to highlight an empty line.")
-            return
-        }
-
-        let range = (fullDisplayedText as NSString).range(of: modifiedLine)
-
-        if range.location != NSNotFound {
-            textStorage.addAttribute(.backgroundColor, value: color.withAlphaComponent(0.5), range: range)
-            print("Highlighted issue in range: \(range)")
-        } else {
-            print("Warning: Could not find modified text to highlight: '\(modifiedLine)'")
-        }
-    }
-
-    private func applyInvisibleCharacterReplacements(to text: String) -> String {
-        return text
-            .replacingOccurrences(of: " ", with: "␣")  // Space → ␣
-            .replacingOccurrences(of: "\t", with: "→") // Tab → →
-            .replacingOccurrences(of: "\n", with: "⏎\n") // Newline → ⏎
-            .trimmingCharacters(in: .whitespacesAndNewlines) // Ensure clean matching
-    }
-
     
     // MARK: - Help Button Actions
     @IBAction func helpPopOverNameButtonClicked(_ sender: NSButton) {
