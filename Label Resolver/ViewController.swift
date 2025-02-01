@@ -54,8 +54,15 @@ class ViewController: NSViewController {
 
     // Stores the real text
     private var originalLabelFileText: String = ""
-
     
+    override var representedObject: Any? {
+        didSet {
+        // Update the view, if already loaded.
+        }
+    }
+
+    // MARK: - Lifecycle
+
     override func viewDidLoad() {
         super.viewDidLoad()
 
@@ -80,32 +87,38 @@ class ViewController: NSViewController {
         self.view.window?.registerForDraggedTypes([.fileURL])
     }
 
-    override var representedObject: Any? {
-        didSet {
-        // Update the view, if already loaded.
-        }
-    }
-
 
     // MARK: - Actions - Local Label
     
     @IBAction func openLabelFileMenuItemClicked(_ sender: NSMenuItem) {
+        openDialogSelectFile()
+    }
+    
+    @IBAction func selectLabelPathButtonClicked(_ sender: NSButton) {
+        openDialogSelectFile()
+    }
+
+    // MARK: - Select File and Load
+    private func openDialogSelectFile() {
         let dialog = NSOpenPanel()
-        dialog.title = "Choose a Label File"
+        dialog.title = "Choose an Installomator label file…"
         dialog.canChooseDirectories = false
         dialog.canChooseFiles = true
-        dialog.allowedContentTypes = [.plainText]
+        dialog.allowedContentTypes = [.text]
         dialog.isExtensionHidden = false
         dialog.allowsMultipleSelection = false
 
         if dialog.runModal() == .OK, let selectedURL = dialog.url {
             labelPath = selectedURL.path
+            
+            // Extract file name and set the label title
             labelTitleTextField.stringValue = "Details for: \(selectedURL.lastPathComponent)"
 
-            // Reuse the existing function that loads and processes the label file
+            // Load and process the file
             loadLabelFileAndRunScript()
         }
     }
+
     
     // MARK: - Actions - Remote Label
     @IBAction func openRemoteLabelFileClicked(_ sender: Any) {
@@ -236,29 +249,6 @@ class ViewController: NSViewController {
         alert.alertStyle = .critical
         alert.addButton(withTitle: "OK")
         alert.runModal()
-    }
-
-
-    // MARK: - Select File and Load
-    @IBAction func selectLabelPathButtonClicked(_ sender: NSButton) {
-        let dialog = NSOpenPanel()
-        dialog.title = "Choose an Installomator label file…"
-        dialog.canChooseDirectories = false
-        dialog.canChooseFiles = true
-        dialog.allowedContentTypes = [.text]
-        dialog.isExtensionHidden = false
-        dialog.allowsMultipleSelection = false
-
-        if dialog.runModal() == .OK, let selectedURL = dialog.url {
-            labelPath = selectedURL.path
-            
-            // Extract file name and set the label title
-            let fileName = selectedURL.lastPathComponent
-            labelTitleTextField.stringValue = "Details for: \(fileName)"
-
-            // Load and process the file
-            loadLabelFileAndRunScript()
-        }
     }
 
     // MARK: - Refresh File and Reload
