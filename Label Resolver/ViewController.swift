@@ -707,6 +707,8 @@ class ViewController: NSViewController {
         return blankLineCount
     }
 
+    // MARK: - Present Validation Report
+
     private func presentValidationReport(issues: [String], warnings: [String]) {
         DispatchQueue.main.async {
             guard let storyboard = self.storyboard else {
