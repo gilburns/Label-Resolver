@@ -660,7 +660,7 @@ class ViewController: NSViewController {
 
         // Check Package ID (optional warning)
         if !labelPackageIDTextField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            warnings.append("Package ID is set, ensure it is correct.")
+            warnings.append("Package ID is set, ensure it is necessary.")
             setFieldBorder(labelPackageIDTextField, color: .yellow)
         }
 
