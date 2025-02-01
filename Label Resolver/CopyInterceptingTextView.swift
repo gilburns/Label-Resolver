@@ -8,7 +8,8 @@
 import Cocoa
 
 class CopyInterceptingTextView: NSTextView {
-    var originalText: String = "" // Store the real text to copy
+    // Store the real text to copy
+    var originalText: String = ""
 
     override func awakeFromNib() {
         super.awakeFromNib()
