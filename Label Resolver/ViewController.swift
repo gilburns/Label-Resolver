@@ -34,7 +34,7 @@ class ViewController: NSViewController {
     
     @IBOutlet weak var labelFileContents: CopyInterceptingTextView!
 
-    @IBOutlet weak var dragDropView: DragDropView! // Connect this to your NSView in Interface Builder
+    @IBOutlet weak var dragDropView: DragDropView!
 
     @IBOutlet weak var reloadButton: NSButton!
     
@@ -75,7 +75,9 @@ class ViewController: NSViewController {
 
     override func viewDidAppear() {
         super.viewDidAppear()
-        self.view.window?.registerForDraggedTypes([.fileURL]) // Ensure the window accepts drags
+        
+        // Ensure the window accepts drags
+        self.view.window?.registerForDraggedTypes([.fileURL])
     }
 
     override var representedObject: Any? {
@@ -670,7 +672,9 @@ class ViewController: NSViewController {
 
     private func checkURLAvailability(_ url: URL, completion: @escaping (Bool) -> Void) {
         var request = URLRequest(url: url)
-        request.httpMethod = "HEAD" // Only fetch headers, not the full file
+        
+        // Only fetch headers, not the full file
+        request.httpMethod = "HEAD"
 
         let task = URLSession.shared.dataTask(with: request) { _, response, error in
             if let httpResponse = response as? HTTPURLResponse {
@@ -888,7 +892,7 @@ class ViewController: NSViewController {
         // Create the full string
         let helpText = NSMutableAttributedString(string: "The type of installation. Possible values:\n\n* \"dmg\" application in disk image file\n    (drag'n drop installation)\n\n* \"zip\" application in zip archive\n    (zip extension)\n\n* \"tbz\" application in tbz archive\n    (tbz extension)\n\n* \"appInDmgInZip\" an app in a dmg file that has been zip'ed\n\n* \"pkg\" flat pkg download\n\n* \"pkgInDmg\" a pkg file inside a disk image\n\n* \"pkgInZip\" a pkg file inside a zip\n")
         
-        // Add a hyperlink to "Mozilla's Firefox page"
+        // Add a hyperlink to page
         let hyperlinkRangeDMG = (helpText.string as NSString).range(of: "\"dmg\"")
         let hyperlinkRangeZIP = (helpText.string as NSString).range(of: "\"zip\"")
         let hyperlinkRangeTBZ = (helpText.string as NSString).range(of: "\"tbz\"")
