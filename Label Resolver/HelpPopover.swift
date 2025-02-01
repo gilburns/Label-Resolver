@@ -14,7 +14,8 @@ class HelpPopover {
 
     init() {
         self.popover = NSPopover()
-        self.popover.behavior = .transient // Automatically dismisses when clicking outside
+        // Automatically dismisses when clicking outside
+        self.popover.behavior = .transient
     }
 
     func showHelp(anchorView: NSView, helpText: NSAttributedString) {
@@ -42,7 +43,8 @@ class HelpPopover {
 
         // Calculate the size required for the text, adding a buffer for the last line
         let calculatedHeight = helpTextView.layoutManager?.usedRect(for: helpTextView.textContainer!).height ?? 150
-        let popoverHeight = min(calculatedHeight + 30, 500) // Add a 10px buffer for the last line
+        // Add a 10px buffer for the last line
+        let popoverHeight = min(calculatedHeight + 30, 500)
 
         // Set constraints for the NSTextView
         NSLayoutConstraint.activate([
