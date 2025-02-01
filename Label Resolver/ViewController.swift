@@ -637,22 +637,6 @@ class ViewController: NSViewController {
         }
     }
 
-    
-    private func countTrailingBlankLines() -> Int {
-        let lines = originalLabelFileText.components(separatedBy: .newlines)
-
-        var blankLineCount = 0
-        for line in lines.reversed() {
-            if line.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                blankLineCount += 1
-            } else {
-                break // Stop counting once a non-blank line is found
-            }
-        }
-
-        return blankLineCount
-    }
-
     // MARK: - Present Validation Report
 
     private func presentValidationReport(issues: [String], warnings: [String]) {
