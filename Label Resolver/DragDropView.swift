@@ -13,7 +13,8 @@ class DragDropView: NSView {
     
     override func awakeFromNib() {
         super.awakeFromNib()
-        registerForDraggedTypes([.fileURL]) // Register for file dragging
+        // Register for file dragging
+        registerForDraggedTypes([.fileURL])
         wantsLayer = true
         layer?.borderWidth = 2.0
         layer?.borderColor = NSColor.clear.cgColor
