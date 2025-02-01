@@ -39,22 +39,23 @@ class ViewController: NSViewController {
     @IBOutlet weak var reloadButton: NSButton!
     
     @IBOutlet weak var loadingLabel: NSProgressIndicator!
-
     
-    let supportedTypes: [NSPasteboard.PasteboardType] = [.fileURL]
-
     // Create a reusable HelpPopover instance
     private let helpPopover = HelpPopover()
 
+    // store the path to the label we are inspecting
     private var labelPath: String?
-    private var labelOutput: String?
+
+    // store the data from the resolved label variables
     var labelData: LabelInfo?
 
-    private var lastLoadedRemoteURL: URL?
-    private var labelPathOrURL: String?  // Can store a file path or a remote URL
+    // Can store a file path or a remote URL
+    private var labelPathOrURL: String?
 
-    private var originalLabelFileText: String = "" // Stores the real text
+    // Stores the real text
+    private var originalLabelFileText: String = ""
 
+    
     override func viewDidLoad() {
         super.viewDidLoad()
 
@@ -83,35 +84,8 @@ class ViewController: NSViewController {
         }
     }
 
-    
 
-    // MARK: - Drag and Drop
-
-    func highlight() {
-        self.view.layer?.borderColor = NSColor.controlAccentColor.cgColor
-    }
-
-    func unhighlight() {
-        self.view.layer?.borderColor = NSColor.clear.cgColor
-    }
-
-
-    // MARK: - Drag and Drop helpers
-    private func isValidLabelFile(_ sender: NSDraggingInfo) -> Bool {
-        guard let fileURL = getDraggedFileURL(sender) else { return false }
-        return fileURL.pathExtension == "sh" // Accept only `.sh` files
-    }
-
-    private func getDraggedFileURL(_ sender: NSDraggingInfo) -> URL? {
-        let pasteboard = sender.draggingPasteboard
-        guard let items = pasteboard.readObjects(forClasses: [NSURL.self], options: nil) as? [URL], let fileURL = items.first else {
-            return nil
-        }
-        return fileURL
-    }
-
-    
-    // MARK: - Actions
+    // MARK: - Actions - Local Label
     
     @IBAction func openLabelFileMenuItemClicked(_ sender: NSMenuItem) {
         let dialog = NSOpenPanel()
@@ -131,6 +105,7 @@ class ViewController: NSViewController {
         }
     }
     
+    // MARK: - Actions - Remote Label
     @IBAction func openRemoteLabelFileClicked(_ sender: Any) {
         let alert = NSAlert()
         alert.messageText = "Enter URL for Remote Label.sh"
@@ -396,6 +371,7 @@ class ViewController: NSViewController {
 
         let attributedString = NSMutableAttributedString(string: text)
 
+        // Define character replacements
         let replacements: [(character: String, replacement: String, color: NSColor)] = [
             (" ", "␣", NSColor.gray.withAlphaComponent(0.5)),  // Space → ␣
             ("\t", "→", NSColor.blue.withAlphaComponent(0.5)), // Tab → →
@@ -415,11 +391,22 @@ class ViewController: NSViewController {
             }
         }
 
-        // Ensure the entire text uses a monospaced font
+        // Fix: Ensure last two lines' `⏎` remain red
+        let newlineRegex = try! NSRegularExpression(pattern: "⏎")
         let fullRange = NSRange(location: 0, length: attributedString.length)
-        attributedString.addAttribute(.font, value: NSFont.monospacedSystemFont(ofSize: 14, weight: .regular), range: fullRange)
 
-        // Update NSTextView
+        newlineRegex.enumerateMatches(in: attributedString.string, options: [], range: fullRange) { match, _, _ in
+            if let matchRange = match?.range {
+                attributedString.addAttribute(.foregroundColor, value: NSColor.red.withAlphaComponent(0.5), range: matchRange)
+                attributedString.addAttribute(.font, value: NSFont.monospacedSystemFont(ofSize: 14, weight: .regular), range: matchRange)
+            }
+        }
+
+        // Ensure the entire text is consistently monospaced
+        let fullTextRange = NSRange(location: 0, length: attributedString.length)
+        attributedString.addAttribute(.font, value: NSFont.monospacedSystemFont(ofSize: 14, weight: .regular), range: fullTextRange)
+
+        // Update NSTextView with the corrected attributed text
         textStorage.setAttributedString(attributedString)
     }
 
