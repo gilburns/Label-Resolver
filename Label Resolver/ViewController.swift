@@ -197,11 +197,11 @@ class ViewController: NSViewController {
                 return
             }
 
-            print(jsonData)
+//            print(jsonData)
             
             let decoder = JSONDecoder()
             let labelInfo = try decoder.decode(LabelInfo.self, from: jsonData)
-            print(labelInfo)
+//            print(labelInfo)
 
             // Populate UI fields with JSON data
             populateFields(with: labelInfo)
