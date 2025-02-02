@@ -140,6 +140,7 @@ class ViewController: NSViewController {
         }
     }
     
+    // MARK: - Remote File Helper Functions
     private func downloadRemoteLabelFile(from url: URL) {
         let task = URLSession.shared.dataTask(with: url) { data, response, error in
             DispatchQueue.main.async {
@@ -251,7 +252,7 @@ class ViewController: NSViewController {
         alert.runModal()
     }
 
-    // MARK: - Refresh File and Reload
+    // MARK: - Action - Refresh File and Reload
     @IBAction func refreshLabelPathButtonClicked(_ sender: NSButton) {
         guard let lastLoaded = labelPathOrURL else {
             print("No file to reload.")
@@ -381,7 +382,7 @@ class ViewController: NSViewController {
     }
 
     
-    // MARK: - Label Processor
+    // MARK: - Label Processor - Zsh Script
     func runZshScript(withLabelPath labelPath: String) throws -> String {
         guard let scriptPath = Bundle.main.path(forResource: "process_label", ofType: "sh") else {
             throw NSError(domain: "Script not found", code: 1)
@@ -638,7 +639,6 @@ class ViewController: NSViewController {
     }
 
     // MARK: - Present Validation Report
-
     private func presentValidationReport(issues: [String], warnings: [String]) {
         DispatchQueue.main.async {
             guard let storyboard = self.storyboard else {
