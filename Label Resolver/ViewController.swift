@@ -555,6 +555,9 @@ class ViewController: NSViewController {
             issues.append("Label Name is required.")
             setFieldBorder(labelNameTextField, color: .red)
         }
+        else{
+            setFieldBorder(labelNameTextField, color: .green)
+        }
 
         // Check Label Type
         if labelTypeTextField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
@@ -565,6 +568,9 @@ class ViewController: NSViewController {
             if !validTypes.contains(labelTypeTextField.stringValue) {
                 issues.append("Invalid Label Type: \(labelTypeTextField.stringValue)")
                 setFieldBorder(labelTypeTextField, color: .red)
+            }
+            else{
+                setFieldBorder(labelTypeTextField, color: .green)
             }
         }
 
@@ -584,6 +590,10 @@ class ViewController: NSViewController {
                         issues.append("Download URL is unreachable or does not return a valid response: \(urlString)")
                         setFieldBorder(self.labelDownloadURLTextField, color: .red)
                     }
+                    else{
+                        setFieldBorder(self.labelDownloadURLTextField, color: .green)
+                    }
+
                 }
             }
         }
@@ -596,6 +606,10 @@ class ViewController: NSViewController {
             issues.append("Expected Team ID must be 10 characters long.")
             setFieldBorder(labelExpectedTeamIdTextField, color: .red)
         }
+        else{
+            setFieldBorder(labelExpectedTeamIdTextField, color: .green)
+        }
+
 
         // Check Package ID (optional warning)
         if !labelPackageIDTextField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
