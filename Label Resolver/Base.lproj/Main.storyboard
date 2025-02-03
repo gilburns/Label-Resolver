@@ -1370,7 +1370,7 @@
                                 </scroller>
                             </scrollView>
                             <textField focusRingType="none" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="c91-Av-r9V">
-                                <rect key="frame" x="155" y="656" width="865" height="21"/>
+                                <rect key="frame" x="155" y="656" width="845" height="21"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                 <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" editable="YES" sendsActionOnEndEditing="YES" borderStyle="bezel" drawsBackground="YES" id="xyP-cn-s18">
                                     <font key="font" usesAppearanceFont="YES"/>
@@ -1388,7 +1388,7 @@
                                 </textFieldCell>
                             </textField>
                             <button horizontalHuggingPriority="750" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="cGf-5W-r1l">
-                                <rect key="frame" x="1025" y="653" width="25" height="25"/>
+                                <rect key="frame" x="1005" y="653" width="25" height="25"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                 <buttonCell key="cell" type="help" bezelStyle="helpButton" alignment="center" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="XB3-sR-E6d">
                                     <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
