@@ -21,7 +21,9 @@ class DragDropView: NSView {
     }
 
     override func draggingEntered(_ sender: NSDraggingInfo) -> NSDragOperation {
-//        print("Dragging Entered") // Debugging
+        #if DEBUG
+        print("Dragging Entered") // Debugging
+        #endif
         highlight()
         return .copy
     }
@@ -31,12 +33,16 @@ class DragDropView: NSView {
     }
 
     override func draggingExited(_ sender: NSDraggingInfo?) {
-//        print("Dragging Exited") // Debugging
+        #if DEBUG
+        print("Dragging Exited") // Debugging
+        #endif
         unhighlight()
     }
 
     override func performDragOperation(_ sender: NSDraggingInfo) -> Bool {
-//        print("File Dropped") // Debugging
+        #if DEBUG
+        print("File Dropped") // Debugging
+        #endif
         unhighlight()
         
         guard let fileURL = getDraggedFileURL(sender) else { return false }
