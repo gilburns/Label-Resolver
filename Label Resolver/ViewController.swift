@@ -225,7 +225,9 @@ class ViewController: NSViewController {
             try trimmedContents.write(to: tempFileURL, atomically: true, encoding: .utf8)
             return tempFileURL
         } catch {
+            #if DEBUG
             print("Error writing remote file to temp location: \(error.localizedDescription)")
+            #endif
             return nil
         }
     }
@@ -255,14 +257,18 @@ class ViewController: NSViewController {
     // MARK: - Action - Refresh File and Reload
     @IBAction func refreshLabelPathButtonClicked(_ sender: NSButton) {
         guard let lastLoaded = labelPathOrURL else {
+            #if DEBUG
             print("No file to reload.")
+            #endif
             showError(message: "No file has been loaded to reload.")
             return
         }
 
         if lastLoaded.starts(with: "http") {
             // Reload the remote file
+            #if DEBUG
             print("Reloading remote file: \(lastLoaded)")
+            #endif
             if let url = URL(string: lastLoaded) {
                 downloadRemoteLabelFile(from: url)
             } else {
@@ -270,7 +276,9 @@ class ViewController: NSViewController {
             }
         } else {
             // Reload the local file
+            #if DEBUG
             print("Reloading local file: \(lastLoaded)")
+            #endif
             labelPath = lastLoaded
             loadLabelFileAndRunScript()
         }
@@ -279,7 +287,9 @@ class ViewController: NSViewController {
     // MARK: - Load File & Run Script (Shared Function)
     private func loadLabelFileAndRunScript() {
         guard let labelPath = labelPath else {
+            #if DEBUG
             print("No label path found.")
+            #endif
             reloadButton.isEnabled = false
             return
         }
@@ -307,17 +317,24 @@ class ViewController: NSViewController {
                 .trimmingCharacters(in: .whitespacesAndNewlines)
                 .replacingOccurrences(of: "\r", with: "")
 
+            #if DEBUG
             print(jsonString)
+            #endif
+            
             // Decode JSON output
             guard let jsonData = jsonString.data(using: .utf8) else {
+                #if DEBUG
                 print("Error converting JSON string to Data.")
+                #endif
                 reloadButton.isEnabled = false
                 return
             }
 
             let decoder = JSONDecoder()
             let labelInfo = try decoder.decode(LabelInfo.self, from: jsonData)
+            #if DEBUG
             print(labelInfo)
+            #endif
 
             // Populate UI fields with JSON data
             populateFields(with: labelInfo)
@@ -328,7 +345,9 @@ class ViewController: NSViewController {
             reloadButton.isEnabled = true
 
         } catch {
+            #if DEBUG
             print("Error loading label file: \(error.localizedDescription)")
+            #endif
             reloadButton.isEnabled = false
         }
 
@@ -656,12 +675,16 @@ class ViewController: NSViewController {
     private func presentValidationReport(issues: [String], warnings: [String]) {
         DispatchQueue.main.async {
             guard let storyboard = self.storyboard else {
-//                print("Error: Storyboard is nil.")
+                #if DEBUG
+                print("Error: Storyboard is nil.")
+                #endif
                 return
             }
 
             guard let reportVC = storyboard.instantiateController(withIdentifier: "ValidationReportViewController") as? ValidationReportViewController else {
-//                print("Error: Could not instantiate ValidationReportViewController.")
+                #if DEBUG
+                print("Error: Could not instantiate ValidationReportViewController.")
+                #endif
                 return
             }
 
@@ -689,7 +712,9 @@ class ViewController: NSViewController {
             reportVC.issues = formattedIssues.isEmpty ? ["No issues found."] : [formattedIssues]
             reportVC.warnings = formattedWarnings.isEmpty ? ["No warnings found."] : [formattedWarnings]
 
-//            print("Presenting Report - Issues: \(issues.count), Warnings: \(warnings.count)")
+            #if DEBUG
+            print("Presenting Report - Issues: \(issues.count), Warnings: \(warnings.count)")
+            #endif
 
             // Show the report view as a sheet
             self.presentAsSheet(reportVC)
@@ -699,7 +724,9 @@ class ViewController: NSViewController {
     private func setValidationBorderColor(issues: [String], warnings: [String]) {
         DispatchQueue.main.async {
             guard let scrollView = self.labelFileContents.enclosingScrollView else {
-//                print("No enclosing NSScrollView found.")
+                #if DEBUG
+                print("No enclosing NSScrollView found.")
+                #endif
                 return
             }
 
