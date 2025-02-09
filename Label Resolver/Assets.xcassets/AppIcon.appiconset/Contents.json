@@ -11,48 +11,49 @@
       "size" : "16x16"
     },
     {
+      "filename" : "LabelResolver_32.png",
       "idiom" : "mac",
       "scale" : "1x",
       "size" : "32x32"
     },
     {
-      "filename" : "LabelResolver-64.png",
+      "filename" : "LabelResolver_64.png",
       "idiom" : "mac",
       "scale" : "2x",
       "size" : "32x32"
     },
     {
-      "filename" : "LabelResolver-128.png",
+      "filename" : "LabelResolver_128.png",
       "idiom" : "mac",
       "scale" : "1x",
       "size" : "128x128"
     },
     {
-      "filename" : "LabelResolver-256 1.png",
+      "filename" : "LabelResolver_256 1.png",
       "idiom" : "mac",
       "scale" : "2x",
       "size" : "128x128"
     },
     {
-      "filename" : "LabelResolver-256.png",
+      "filename" : "LabelResolver_256.png",
       "idiom" : "mac",
       "scale" : "1x",
       "size" : "256x256"
     },
     {
-      "filename" : "LabelResolver-512 1.png",
+      "filename" : "LabelResolver_512.png",
       "idiom" : "mac",
       "scale" : "2x",
       "size" : "256x256"
     },
     {
-      "filename" : "LabelResolver-512.png",
+      "filename" : "LabelResolver_512 1.png",
       "idiom" : "mac",
       "scale" : "1x",
       "size" : "512x512"
     },
     {
-      "filename" : "install.png",
+      "filename" : "LabelResolver_1024.png",
       "idiom" : "mac",
       "scale" : "2x",
       "size" : "512x512"
