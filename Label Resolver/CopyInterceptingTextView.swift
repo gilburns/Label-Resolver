@@ -36,7 +36,9 @@ class CopyInterceptingTextView: NSTextView {
 
         // Ensure `NSScrollView` allows scrolling
         if let scrollView = self.enclosingScrollView {
+            #if DEBUG
             print("scrollView found")
+            #endif
             scrollView.hasVerticalScroller = true
             scrollView.hasHorizontalScroller = true
             scrollView.autohidesScrollers = false
@@ -46,10 +48,14 @@ class CopyInterceptingTextView: NSTextView {
 
     
     override func copy(_ sender: Any?) {
+        #if DEBUG
         print("Intercepted Copy Command") // Debugging
+        #endif
 
         guard !originalText.isEmpty else {
+            #if DEBUG
             print("No original text to copy")
+            #endif
             return
         }
 
@@ -57,6 +63,8 @@ class CopyInterceptingTextView: NSTextView {
         pasteboard.clearContents()
         pasteboard.setString(originalText, forType: .string)
 
+        #if DEBUG
         print("Copied Original Text:\n\(originalText)")
+        #endif
     }
 }
