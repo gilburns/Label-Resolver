@@ -54,6 +54,12 @@ class ViewController: NSViewController {
 
     // Stores the real text
     private var originalLabelFileText: String = ""
+
+    // Fixable formatting problem flags — set during validation, consumed by applyFixes()
+    private var fixableTabs = false
+    private var fixableTrailingLines = false
+    private var fixableCRLF = false
+    private var hasFixableIssues: Bool { fixableTabs || fixableTrailingLines || fixableCRLF }
     
     override var representedObject: Any? {
         didSet {
@@ -477,11 +483,19 @@ class ViewController: NSViewController {
     // MARK: - Helper Functions
     // Validate `labelFileContents`
     private func validateLabelFileContents() {
+        // Reset fixable flags before each validation pass
+        fixableTabs = false
+        fixableTrailingLines = false
+        fixableCRLF = false
+
         var issues: [String] = []
         var warnings: [String] = []
 
         let lines = originalLabelFileText.components(separatedBy: .newlines)
         guard !lines.isEmpty else { return }
+
+        // Check for Windows-style line endings (CRLF)
+        checkLineEndings(&issues)
 
         // Run indentation check inside the validation process
         checkIndentationIssues(&issues)
@@ -503,6 +517,13 @@ class ViewController: NSViewController {
 
     
     
+    private func checkLineEndings(_ issues: inout [String]) {
+        if originalLabelFileText.contains("\r\n") {
+            issues.append("File uses Windows-style line endings (CRLF). Unix line endings (LF) are required.")
+            fixableCRLF = true
+        }
+    }
+
     private func checkIndentationIssues(_ issues: inout [String]) {
         let lines = originalLabelFileText.components(separatedBy: .newlines)
 
@@ -529,6 +550,7 @@ class ViewController: NSViewController {
 
                 if line.hasPrefix("\t") {
                     issues.append("Line uses a tab instead of spaces: '\(trimmed)' (Line \(index + 1))")
+                    fixableTabs = true
                 } else if spaceCount > 0 && spaceCount % 4 != 0 {
                     issues.append("Line indentation is incorrect (must be a multiple of 4 spaces, found \(spaceCount)): '\(trimmed)' (Line \(index + 1))")
                 }
@@ -553,6 +575,7 @@ class ViewController: NSViewController {
 
         if blankLineCount > 1 {
             warnings.append("There are \(blankLineCount) extra blank lines at the end of the file.")
+            fixableTrailingLines = true
         }
     }
 
@@ -712,12 +735,103 @@ class ViewController: NSViewController {
             reportVC.issues = formattedIssues.isEmpty ? ["No issues found."] : [formattedIssues]
             reportVC.warnings = formattedWarnings.isEmpty ? ["No warnings found."] : [formattedWarnings]
 
+            // Wire up "Fix Issues" button if there are auto-fixable formatting problems
+            reportVC.canFix = self.hasFixableIssues
+            reportVC.onFixRequested = { [weak self] in
+                self?.handleFixRequest()
+            }
+
             #if DEBUG
-            print("Presenting Report - Issues: \(issues.count), Warnings: \(warnings.count)")
+            print("Presenting Report - Issues: \(issues.count), Warnings: \(warnings.count), Fixable: \(self.hasFixableIssues)")
             #endif
 
             // Show the report view as a sheet
             self.presentAsSheet(reportVC)
+        }
+    }
+
+    // MARK: - Fix Issues
+
+    private func handleFixRequest() {
+        let isRemote = labelPathOrURL?.starts(with: "http") ?? false
+
+        let alert = NSAlert()
+        alert.messageText = "Fix Formatting Issues?"
+        if isRemote {
+            alert.informativeText = "The fixed content will be saved to a new local file. The original remote file is not modified."
+        } else {
+            alert.informativeText = "The label file will be modified in place. Make sure you have a backup if needed."
+        }
+        alert.addButton(withTitle: isRemote ? "Save Fixed File…" : "Fix File")
+        alert.addButton(withTitle: "Cancel")
+        alert.alertStyle = .warning
+
+        guard let window = view.window else { return }
+        alert.beginSheetModal(for: window) { [weak self] response in
+            guard response == .alertFirstButtonReturn, let self else { return }
+            if isRemote {
+                self.saveFixedFileWithPanel()
+            } else {
+                self.writeFixedFileInPlace()
+            }
+        }
+    }
+
+    private func applyFixes(to text: String) -> String {
+        var result = text
+
+        // Fix CRLF → LF first so subsequent checks work on clean newlines
+        if fixableCRLF {
+            result = result.replacingOccurrences(of: "\r\n", with: "\n")
+        }
+
+        // Fix tabs → 4 spaces
+        if fixableTabs {
+            result = result.replacingOccurrences(of: "\t", with: "    ")
+        }
+
+        // Fix extra trailing blank lines: trim trailing whitespace/newlines, then add one newline
+        if fixableTrailingLines {
+            result = result.trimmingCharacters(in: .whitespacesAndNewlines) + "\n"
+        }
+
+        return result
+    }
+
+    private func writeFixedFileInPlace() {
+        guard let path = labelPathOrURL, !path.starts(with: "http") else { return }
+        let fixedText = applyFixes(to: originalLabelFileText)
+        do {
+            try fixedText.write(toFile: path, atomically: true, encoding: .utf8)
+            // Reload so the UI and validation reflect the fixed content
+            labelPath = path
+            loadLabelFileAndRunScript()
+        } catch {
+            showError(message: "Failed to write fixed file: \(error.localizedDescription)")
+        }
+    }
+
+    private func saveFixedFileWithPanel() {
+        let fixedText = applyFixes(to: originalLabelFileText)
+        let savePanel = NSSavePanel()
+        savePanel.allowedContentTypes = [.shellScript, .plainText]
+        savePanel.nameFieldStringValue = {
+            // Suggest the original filename with a prefix
+            if let urlString = labelPathOrURL,
+               let url = URL(string: urlString) {
+                return "fixed_" + url.lastPathComponent
+            }
+            return "fixed_label.sh"
+        }()
+
+        guard let window = view.window else { return }
+        savePanel.beginSheetModal(for: window) { [weak self] response in
+            guard response == .OK, let url = savePanel.url, let self else { return }
+            do {
+                try fixedText.write(to: url, atomically: true, encoding: .utf8)
+            } catch {
+                self.showError(message: "Failed to save fixed file: \(error.localizedDescription)")
+            }
         }
     }
 
