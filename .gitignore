@@ -62,3 +62,4 @@ fastlane/screenshots/**/*.png
 fastlane/test_output
 /Release Builds
 CLAUDE.md
+open_prs.csv
