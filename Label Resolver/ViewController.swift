@@ -60,6 +60,10 @@ class ViewController: NSViewController {
     private var fixableTrailingLines = false
     private var fixableCRLF = false
     private var hasFixableIssues: Bool { fixableTabs || fixableTrailingLines || fixableCRLF }
+
+    // Architecture toggle: when true, script runs under /usr/bin/arch -x86_64
+    private var useRosetta = false
+    private weak var archToggle: NSSegmentedControl?
     
     override var representedObject: Any? {
         didSet {
@@ -75,12 +79,31 @@ class ViewController: NSViewController {
         // Disable reload button at startup
         reloadButton.isEnabled = false
 
+        // Add architecture toggle control ("Native" | "x86_64") to the left of the reload button
+        let toggle = NSSegmentedControl(
+            labels: ["Native", "x86_64"],
+            trackingMode: .selectOne,
+            target: self,
+            action: #selector(archToggleChanged(_:))
+        )
+        toggle.selectedSegment = 0
+        toggle.isEnabled = false
+        toggle.isHidden = true
+        toggle.translatesAutoresizingMaskIntoConstraints = false
+        toggle.toolTip = "Choose whether to run the label script natively or under Rosetta (x86_64)"
+        view.addSubview(toggle)
+        NSLayoutConstraint.activate([
+            toggle.centerYAnchor.constraint(equalTo: reloadButton.centerYAnchor),
+            toggle.trailingAnchor.constraint(equalTo: reloadButton.leadingAnchor, constant: -10),
+        ])
+        archToggle = toggle
+
         // Handle when a file is dropped
         dragDropView.onFileDropped = { fileURL in
             self.labelPath = fileURL.path
             let fileName = fileURL.lastPathComponent
             self.labelTitleTextField.stringValue = "Details for: \(fileName)"
-            
+
             // Load the label file
             self.loadLabelFileAndRunScript()
         }
@@ -88,9 +111,28 @@ class ViewController: NSViewController {
 
     override func viewDidAppear() {
         super.viewDidAppear()
-        
+
         // Ensure the window accepts drags
         self.view.window?.registerForDraggedTypes([.fileURL])
+    }
+
+    @objc private func archToggleChanged(_ sender: NSSegmentedControl) {
+        useRosetta = sender.selectedSegment == 1
+        refreshLabelPathButtonClicked(reloadButton)
+    }
+
+    private func updateArchToggleVisibility() {
+        let hasArchDetection = originalLabelFileText.contains("$(arch)") ||
+                               originalLabelFileText.contains("$(/usr/bin/arch)")
+        if hasArchDetection {
+            archToggle?.isHidden = false
+            archToggle?.isEnabled = true
+        } else {
+            archToggle?.isHidden = true
+            // Reset to native so a subsequent arch-aware file isn't loaded under x86_64 by surprise
+            archToggle?.selectedSegment = 0
+            useRosetta = false
+        }
     }
 
 
@@ -185,6 +227,7 @@ class ViewController: NSViewController {
                 // Update UI
                 self.labelTitleTextField.stringValue = "Details for: \(url.lastPathComponent)"
                 self.reloadButton.isEnabled = true
+                self.updateArchToggleVisibility()
             }
         }
         task.resume()
@@ -193,7 +236,7 @@ class ViewController: NSViewController {
     private func processLabelFile(at fileURL: URL) {
         do {
             // Run the script and get JSON output
-            let jsonString = try runZshScript(withLabelPath: fileURL.path)
+            let jsonString = try runZshScript(withLabelPath: fileURL.path, useRosetta: useRosetta)
                 .trimmingCharacters(in: .whitespacesAndNewlines)
                 .replacingOccurrences(of: "\r", with: "")
 
@@ -319,7 +362,7 @@ class ViewController: NSViewController {
             showInvisibleCharacters(in: fileContents)
 
             // Run `process_label.sh` on the file
-            let jsonString = try runZshScript(withLabelPath: labelPath)
+            let jsonString = try runZshScript(withLabelPath: labelPath, useRosetta: useRosetta)
                 .trimmingCharacters(in: .whitespacesAndNewlines)
                 .replacingOccurrences(of: "\r", with: "")
 
@@ -349,6 +392,7 @@ class ViewController: NSViewController {
             validateLabelFileContents()
 
             reloadButton.isEnabled = true
+            updateArchToggleVisibility()
 
         } catch {
             #if DEBUG
@@ -408,7 +452,7 @@ class ViewController: NSViewController {
 
     
     // MARK: - Label Processor - Zsh Script
-    func runZshScript(withLabelPath labelPath: String) throws -> String {
+    func runZshScript(withLabelPath labelPath: String, useRosetta: Bool = false) throws -> String {
         guard let scriptPath = Bundle.main.path(forResource: "process_label", ofType: "sh") else {
             throw NSError(domain: "Script not found", code: 1)
         }
@@ -416,8 +460,13 @@ class ViewController: NSViewController {
         let process = Process()
         let pipe = Pipe()
 
-        process.executableURL = URL(fileURLWithPath: "/bin/zsh")
-        process.arguments = [scriptPath, labelPath]
+        if useRosetta {
+            process.executableURL = URL(fileURLWithPath: "/usr/bin/arch")
+            process.arguments = ["-x86_64", "/bin/zsh", scriptPath, labelPath]
+        } else {
+            process.executableURL = URL(fileURLWithPath: "/bin/zsh")
+            process.arguments = [scriptPath, labelPath]
+        }
         process.standardOutput = pipe
         process.standardError = pipe
 
