@@ -616,13 +616,11 @@ class ViewController: NSViewController {
         let lines = originalLabelFileText.components(separatedBy: .newlines).reversed()
 
         var blankLineCount = 0
-        var foundNonBlank = false
 
         for line in lines {
             if line.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                 blankLineCount += 1
             } else {
-                foundNonBlank = true
                 break
             }
         }
