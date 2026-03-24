@@ -57,9 +57,10 @@ class ViewController: NSViewController {
 
     // Fixable formatting problem flags — set during validation, consumed by applyFixes()
     private var fixableTabs = false
+    private var fixableIndentation = false
     private var fixableTrailingLines = false
     private var fixableCRLF = false
-    private var hasFixableIssues: Bool { fixableTabs || fixableTrailingLines || fixableCRLF }
+    private var hasFixableIssues: Bool { fixableTabs || fixableIndentation || fixableTrailingLines || fixableCRLF }
 
     // Architecture toggle: when true, script runs under /usr/bin/arch -x86_64
     private var useRosetta = false
@@ -534,6 +535,7 @@ class ViewController: NSViewController {
     private func validateLabelFileContents() {
         // Reset fixable flags before each validation pass
         fixableTabs = false
+        fixableIndentation = false
         fixableTrailingLines = false
         fixableCRLF = false
 
@@ -586,13 +588,15 @@ class ViewController: NSViewController {
                 continue
             }
 
-            // Detect when the case block starts (first `)`)
-            if trimmed.hasSuffix(")") {
+            // Detect when the case block starts — only from outside the block.
+            // Lines already inside that happen to end with `)` (e.g. blockingProcesses=( "App" ))
+            // must still have their indentation checked, so we guard on !insideCaseBlock here.
+            if !insideCaseBlock && trimmed.hasSuffix(")") {
                 insideCaseBlock = true
                 continue
             }
 
-            // Only check indentation after `)`
+            // Check indentation for all lines inside the case block
             if insideCaseBlock {
                 let leadingWhitespace = line.prefix(while: { $0 == " " })
                 let spaceCount = leadingWhitespace.count
@@ -602,6 +606,7 @@ class ViewController: NSViewController {
                     fixableTabs = true
                 } else if spaceCount > 0 && spaceCount % 4 != 0 {
                     issues.append("Line indentation is incorrect (must be a multiple of 4 spaces, found \(spaceCount)): '\(trimmed)' (Line \(index + 1))")
+                    fixableIndentation = true
                 }
             }
         }
@@ -783,6 +788,8 @@ class ViewController: NSViewController {
             // Pass formatted data to the report view
             reportVC.issues = formattedIssues.isEmpty ? ["No issues found."] : [formattedIssues]
             reportVC.warnings = formattedWarnings.isEmpty ? ["No warnings found."] : [formattedWarnings]
+            reportVC.hasRealIssues = !issues.isEmpty
+            reportVC.hasRealWarnings = !warnings.isEmpty
 
             // Wire up "Fix Issues" button if there are auto-fixable formatting problems
             reportVC.canFix = self.hasFixableIssues
@@ -839,12 +846,53 @@ class ViewController: NSViewController {
             result = result.replacingOccurrences(of: "\t", with: "    ")
         }
 
+        // Fix non-multiple-of-4 space indentation inside the case block.
+        // Runs after the tab fix so any freshly converted tab lines (now exactly 4 spaces) are already correct.
+        if fixableIndentation {
+            result = fixIndentation(in: result)
+        }
+
         // Fix extra trailing blank lines: trim trailing whitespace/newlines, then add one newline
         if fixableTrailingLines {
             result = result.trimmingCharacters(in: .whitespacesAndNewlines) + "\n"
         }
 
         return result
+    }
+
+    /// Rounds the leading-space count of each indented line inside the case block to the
+    /// nearest multiple of 4 (minimum 4). Mirrors the detection logic in checkIndentationIssues.
+    private func fixIndentation(in text: String) -> String {
+        let lines = text.components(separatedBy: "\n")
+        var insideCaseBlock = false
+
+        let fixed = lines.map { line -> String in
+            let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
+
+            if trimmed.isEmpty || trimmed.hasPrefix("#") {
+                return line
+            }
+
+            if !insideCaseBlock && trimmed.hasSuffix(")") {
+                insideCaseBlock = true
+                return line
+            }
+
+            guard insideCaseBlock, !line.hasPrefix("\t") else {
+                return line
+            }
+
+            let spaceCount = line.prefix(while: { $0 == " " }).count
+            guard spaceCount > 0 && spaceCount % 4 != 0 else {
+                return line
+            }
+
+            // Round to nearest multiple of 4, minimum 4
+            let corrected = max(4, ((spaceCount + 2) / 4) * 4)
+            return String(repeating: " ", count: corrected) + line.dropFirst(spaceCount)
+        }
+
+        return fixed.joined(separator: "\n")
     }
 
     private func writeFixedFileInPlace() {

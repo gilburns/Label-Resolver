@@ -16,6 +16,10 @@ class ValidationReportViewController: NSViewController {
     var issues: [String] = []
     var warnings: [String] = []
 
+    /// True when the issues/warnings arrays contain real findings (not just placeholder text).
+    var hasRealIssues: Bool = false
+    var hasRealWarnings: Bool = false
+
     /// Set to true before presentation when there are auto-fixable formatting problems.
     var canFix: Bool = false
 
@@ -25,6 +29,9 @@ class ValidationReportViewController: NSViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         updateReport()
+        if hasRealIssues || hasRealWarnings {
+            addCopyButton()
+        }
         if canFix {
             addFixButton()
         }
@@ -39,6 +46,33 @@ class ValidationReportViewController: NSViewController {
 
     @IBAction func closeReport(_ sender: NSButton) {
         self.dismiss(self)
+    }
+
+    private func addCopyButton() {
+        let copyButton = NSButton(title: "Copy Report", target: self, action: #selector(copyReportClicked(_:)))
+        copyButton.bezelStyle = .rounded
+        copyButton.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(copyButton)
+
+        NSLayoutConstraint.activate([
+            copyButton.centerYAnchor.constraint(equalTo: okButton.centerYAnchor),
+            copyButton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
+        ])
+    }
+
+    @objc private func copyReportClicked(_ sender: NSButton) {
+        var sections: [String] = []
+
+        if hasRealIssues {
+            sections.append("**Issues:**\n\n" + issuesTextView.string.trimmingCharacters(in: .newlines))
+        }
+        if hasRealWarnings {
+            sections.append("**Warnings:**\n\n" + warningsTextView.string.trimmingCharacters(in: .newlines))
+        }
+
+        let report = sections.joined(separator: "\n\n---\n\n")
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(report, forType: .string)
     }
 
     private func addFixButton() {
